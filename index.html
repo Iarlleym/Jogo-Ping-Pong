@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Ping Pong</title>
+
+    <style> /*Tag para o CSS*/
+
+        *{ 
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+    </style>
+
+</head>
+<body>
+    
+    <canvas></canvas>
+
+
+    <script>
+
+        //CRIA AS VARIÁVEIS
+
+        const canvasEl = document.querySelector("canvas"), 
+        canvasCtx = canvasEl.getContext("2d"), 
+        gapX = 10
+
+        const mouse = {x: 0 , y: 0}
+        
+
+         //FIM DAS VARIÁVEIS
+
+        //CRIA OS OBJETO CAMPO
+        const field = {
+            w: window.innerWidth,
+            h: window.innerHeight,
+            draw: function () {
+
+                //CRIA O CAMPO
+                canvasCtx.fillStyle = "#286047" //Coloco a cor na variavel canvaCtx
+                canvasCtx.fillRect(0, 0, this.w, this.h) // (x, y, largura, altura) desenha um retangulo x=cima para baixo y=esquerda para direita
+                //FIM DO CAMPO
+
+            },
+        }
+        //FIM DO OBJETO CAMPO
+
+        //CRIA OS OBJETO LINHA CENTRAL
+        const line = {
+
+            w: 15,
+            h: field.h,
+            draw: function () {
+
+                //CRIA A LINHA CENTRAL
+                canvasCtx.fillStyle = "#fff" //Coloco a cor na variavel canvaCtx
+                canvasCtx.fillRect(((field.w / 2) - (this.w / 2)), 0, this.w, this.h)
+                //FIM DA LINHA CENTRAL
+            },
+        }
+        //FIM DO OBJETO LINHA CENTRAL
+
+        //CRIA OS OBJETO RAQUETE ESQUERDA
+            const leftpaddle = {
+                x: gapX,
+                y: 0,
+                w: line.w,
+                h: 200,
+                _move: function () {
+                    this.y = ( mouse.y ) - ( this.h /2 )
+                },
+                draw: function () {
+                     //CRIA A RAQUETE ESQUERDA
+                    canvasCtx.fillRect(this.x, this.y, this.w, this.h)
+                    this._move () //Chama afunção move
+                    //FIM DA RAQUETE ESQUERDA
+                },
+        }
+        //FIM DA RAQUETE ESQUERDA
+
+        //CRIA OS OBJETO RAQUETE DIREITA
+            const rigthpaddle = {
+            x: (field.w) - (line.w+ gapX),
+            y: 0,
+            w: line.w,
+            h: 200,
+            speed: 1,
+            _move: function (){
+                if (((this.y) + (this.h /2)) < (ball.y + ball.r)) {
+                    this.y += this.speed
+                } else  {
+                    this.y -= this.speed
+                }
+            },
+            speedUp: function () {  
+                this.speed += 0.3
+            },
+                draw: function () {
+                     //CRIA A RAQUETE DIREITA
+                    canvasCtx.fillRect(this.x, this.y, this.w, this.h)
+                    this._move() //Chama a função move
+                    //FIM DA RAQUETE DIREITA
+                },
+        }
+        //FIM DA RAQUETE DIREITA
+
+
+        //CRIA O OBJETO PLACAR
+        const score = {
+            human: 0,
+            computer: 0,
+            increaseHuman: function () { //Incrementa o ponto ao humano
+                this.human++
+            },
+            increaseComputer: function () { //Incrementa o ponto ao Computador
+                this.computer++
+            },
+                draw: function () {
+                    //CRIA O PLACAR
+                    canvasCtx.font = "bold 72px arial" //Define a fonte
+                    canvasCtx.textAlign = 'center' //Seta o texto no centro
+                    canvasCtx.textBaseline = 'top' 
+                    canvasCtx.fillStyle = "#01341D"
+                    canvasCtx.fillText(this.human, (field.w/4), 50) //Coloca o texto 3 na posição x,y 
+                    canvasCtx.fillText(this.computer, ((field.w/4)+(field.w/2)), 50) //Coloca o texto 1 na posição x,y 
+                    //FIM DO PLACAR
+                },
+        }
+        //FIM DO PLACAR
+
+        //CRIA O OBEJETO BOLA
+        const ball = {
+            x: field.w /2, 
+            y: field.h /2,
+            r: 20, //Raio
+            speed: 3,  //velocidade da bola
+            directionY: 1, //Diz o sentido da bola (1 = bola para baixo, -1 = Bola para cima)
+            directionX: 1,
+
+            _calcPosition: function () { //Verifica as laterias superior e inferior do campo
+            
+                //Verificar se o jogador 1 fez ponto (x > largura do campo)
+                if (this.x > (field.w - this.r - rigthpaddle.w - gapX)) { 
+
+                    //Verifica se a raquete direita esta na posição da bola
+                    if (((this.y + this.r) > rigthpaddle.y) && ((this.y - this.r) < (rigthpaddle.y + rigthpaddle.h))) { 
+                        this._reverseX () //Inverte o valor de x
+                    } else {
+                        //Pontuar o jogador 1
+                        score.increaseHuman ()
+                        this._pointUp ()
+                    }
+                }
+
+                 //Verifica se o jogador 2 fez ponto (x < 0)
+                 if (this.x < (this.r + leftpaddle.w + gapX)) {
+
+                 //Verifica se a raquete esquerda esta na posição da bola
+                     if (((this.y + this.r) > leftpaddle.y) && ((this.y - this.r) < (leftpaddle.y + leftpaddle.h))) {
+                     //rebate a bola
+                     this._reverseX ()
+                 } else {
+                     //Pontuar o jogador 2
+                     score.increaseComputer ()
+                     this._pointUp ()
+                 }
+                }
+
+
+                if(((this.y - this.r) < 0 && this.directionY < 0) || (this.y > (field.h - this.r) && this.directionY > 0)) {
+                    // rebate a bola invertendo o sinal do eixo Y
+                    this._reverseY()
+                }
+              
+            },
+            _reverseX: function () { //Transfoma de numeros positivos para negativos
+                this.directionX *= (-1)
+            },
+            _reverseY: function () { //Transfoma de numeros positivos para negativos
+                this.directionY *= (-1)
+            },
+            //CRIA UMA FUNÇÃO PARA AUMENTAR A VELOCIDADE DA BOLINHA
+            _speedUp: function () {
+                this.speed += 0.5
+            },
+            //CRIA A FUNÇÃO PARA REINIAR QUANDO FAZ PONTO
+            _pointUp: function () {
+                this.x = field.w /2
+                this.y = field.h /2
+                this._speedUp ()
+                rigthpaddle.speedUp()
+            },
+            //CRIA A FUNÇÃO PARA INCREMENTAR O MOVIETO DA BOLA
+            _move: function () {
+                this.x  += (this.directionX * this.speed)
+                this.y  += (this.directionY * this.speed)
+            },
+            //FIM DA FUNÇÃO MOVE
+
+            draw: function () {
+                canvasCtx.fillStyle = "#fff" //Coloco a cor na variavel canvaCtx
+                canvasCtx.beginPath()
+                    canvasCtx.arc(this.x, this.y, this.r, 0, 2 * Math.PI, false)
+                canvasCtx.fill()
+                this._move () //Chama a função move
+                this._calcPosition()//Chama afunção _calcPosition
+            },
+        }
+        //FIM DA BOLA
+
+        //CRIA AS FUNÇÃO SETUP
+        function setup(){  //Cria a função Setup
+
+            canvasEl.width = canvasCtx.width = field.w  //Captura a largura de tela e seta no canvas element e context
+            canvasEl.height = canvasCtx.height = field.h //Captura a altura de tela e seta no canvas element e context
+        }
+        //FIM DA FUNÇÃO SETUP
+
+        function draw(){   //Cria a função draw
+
+            field.draw() //Chama o função que cria o campo
+            line.draw () //Chama o função que cria a linha central
+            leftpaddle.draw () //Chama o função que cria a raquete esquerda
+            rigthpaddle.draw () //Chama o função que cria a raquete direita
+            score.draw () //Chama a função que cria o placar
+            ball.draw () //Chama a função que cria a bola
+       
+        }
+        //FIM DAS FUNÇÕES
+
+        // API PARA SUAVIZAR AS ANIMAÇÔES
+        window.animateFrame = (function () {
+        return (
+          window.requestAnimationFrame ||
+          window.webkitRequestAnimationFrame ||
+          window.mozRequestAnimationFrame ||
+          window.oRequestAnimationFrame ||
+          window.msRequestAnimationFrame ||
+          function (callback) {
+            return window.setTimeout(callback, 1000 / 60)
+          }
+        )
+        })()
+        // FINAL DA API PARA SUAVIZAR AS ANIMAÇÔES
+
+        //CRAI A FUNÇÂO MAIN
+        function main () {
+            animateFrame(main) //Chama a API PARA SUAVIZAR As animações
+            draw() //Chama a função Draw
+            }
+        //FIM DA FUNÇÂO MAIN
+
+        //CHAMA AS FUNÇÕES CRIADAS
+        setup() //Chama a função Setup
+        main() //Chama a função main
+        //FIM DAS FUNÇÕES CRIADAS
+
+        //EVENTO QUE ESCUTA O MOUSE
+        canvasEl.addEventListener('mousemove', function (e) {
+            mouse.x = e.pageX
+            mouse.y = e.pageY
+        })
+        //FIM DO EVENTO QUE ESCUTA O MOUSE
+
+    </script><!--script-->
+
+
+</body>
+</html>
